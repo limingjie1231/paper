@@ -1,6 +1,8 @@
 import numpy as np
-from torchmetrics  import Metric
+from torchmetrics import Metric
 from dataloader.pc_dataset import get_SemKITTI_label_name
+
+
 
 
 def fast_hist(pred, label, n):
@@ -19,8 +21,6 @@ def fast_hist_crop(output, target, unique_label):
     hist = hist[unique_label + 1, :]
     hist = hist[:, unique_label + 1]
     return hist
-
-
 class IoU(Metric):
     def __init__(self, dataset_config, dist_sync_on_step=False, compute_on_step=True):
         super().__init__(dist_sync_on_step=dist_sync_on_step, compute_on_step=compute_on_step)
@@ -37,5 +37,5 @@ class IoU(Metric):
         iou = per_class_iu(sum(self.hist_list))
         if np.nanmean(iou) > self.best_miou:
             self.best_miou = np.nanmean(iou)
-        #self.hist_list = []
+        # self.hist_list = []
         return iou, self.best_miou
