@@ -1,7 +1,3 @@
-"""
-Lovasz-Softmax and Jaccard hinge loss in PyTorch
-Maxim Berman 2018 ESAT-PSI KU Leuven (MIT License)
-"""
 
 from __future__ import print_function, division
 

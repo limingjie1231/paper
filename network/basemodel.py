@@ -1,10 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
-'''
-@author: Xu Yan
-@file: base_model.py
-@time: 2021/12/7 22:39
-'''
 import os
 import torch
 import yaml
@@ -13,13 +6,13 @@ import numpy as np
 import pytorch_lightning as pl
 
 from datetime import datetime
-from torchmetrics  import Accuracy
+from torchmetrics import Accuracy
 from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR, CosineAnnealingLR
-from utils.metric_util import IoU
-from utils.schedulers import cosine_schedule_with_warmup
+from utils.metric import IoU
 
 
-class LightningBaseModel(pl.LightningModule):
+
+class BaseModel(pl.LightningModule):
     def __init__(self, args):
         super().__init__()
         self.args = args
@@ -76,7 +69,6 @@ class LightningBaseModel(pl.LightningModule):
                     num_epochs=self.args['train_params']['max_num_epochs'],
                     batch_size=self.args['dataset_params']['train_data_loader']['batch_size'],
                     dataset_size=self.args['dataset_params']['training_size'],
-                    num_gpu=len(self.args.gpu)
                 ),
             )
         else:
@@ -140,6 +132,7 @@ class LightningBaseModel(pl.LightningModule):
          )
 
         return data_dict['loss']
+
 
     def test_step(self, data_dict, batch_idx):
         indices = data_dict['indices']
@@ -220,6 +213,7 @@ class LightningBaseModel(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         iou, best_miou = self.val_iou.compute()
+        self.val_iou.hist_list=[]
         mIoU = np.nanmean(iou)
         str_print = ''
         self.log('val/mIoU', mIoU, on_epoch=True)
@@ -235,6 +229,7 @@ class LightningBaseModel(pl.LightningModule):
     def test_epoch_end(self, outputs):
         if not self.args['submit_to_server']:
             iou, best_miou = self.val_iou.compute()
+            self.val_iou.hist_list = []
             mIoU = np.nanmean(iou)
             str_print = ''
             self.log('val/mIoU', mIoU, on_epoch=True)
@@ -246,18 +241,10 @@ class LightningBaseModel(pl.LightningModule):
 
             str_print += '\nCurrent val miou is %.3f while the best val miou is %.3f' % (mIoU * 100, best_miou * 100)
             self.print(str_print)
-
-    def on_after_backward(self) -> None:
-        """
-        Skipping updates in case of unstable gradients
-        https://github.com/Lightning-AI/lightning/issues/4956
-        """
-        valid_gradients = True
-        for name, param in self.named_parameters():
-            if param.grad is not None:
-                valid_gradients = not (torch.isnan(param.grad).any() or torch.isinf(param.grad).any())
-                if not valid_gradients:
-                    break
-        if not valid_gradients:
-            print(f'detected inf or nan values in gradients. not updating model parameters')
-            self.zero_grad()
+def cosine_schedule_with_warmup(k, num_epochs, batch_size, dataset_size):
+    warmup_iters = 0
+    if k < warmup_iters:
+        return (k + 1) / warmup_iters
+    else:
+        iter_per_epoch = (dataset_size + batch_size - 1) // batch_size
+        return 0.5 * (1 + np.cos(np.pi * (k - warmup_iters) / (num_epochs * iter_per_epoch)))
