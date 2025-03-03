@@ -34,7 +34,7 @@ dataset_params:
 
   # 2D augmentation
   bottom_crop:
-    - 640
+    - 480
     - 320
   color_jitter:
     - 0.4
@@ -104,7 +104,7 @@ dataset_params:
 train_params:
   max_num_epochs: 64
   learning_rate: 0.24
-  optimizer: Adam  # [SGD, Adam]
+  optimizer: SGD  # [SGD, Adam]
   lr_scheduler: CosineAnnealingWarmRestarts  # [StepLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts]
   momentum: 0.9
   nesterov: True
